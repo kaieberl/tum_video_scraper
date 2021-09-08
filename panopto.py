@@ -47,10 +47,9 @@ def get_m3u8_playlist(driver: webdriver, video_id: str) -> (str, str):
     return filename, playlist_url
 
 
-def get_folders(panopto_folders: [(str, str)], destination_folder_path: Path, tmp_directory: Path,
-                tum_username: str, tum_password: str):
+def get_folders(panopto_folders: [(str, str)], destination_folder_path: Path, tum_username: str, tum_password: str):
     driver_options = webdriver.FirefoxOptions()
-    # driver_options.add_argument("--headless")
+    driver_options.add_argument("--headless")
     driver = webdriver.Firefox(options=driver_options)
     driver.get("https://www.moodle.tum.de/login/index.php")
     driver.find_element_by_link_text("TUM LOGIN").click()
@@ -70,6 +69,6 @@ def get_folders(panopto_folders: [(str, str)], destination_folder_path: Path, tm
         m3u8_playlists = get_video_links_in_folder(driver, folder_id)
         subject_folder = Path(destination_folder_path, subject_name)
         subject_folder.mkdir(exist_ok=True)
-        downloader.download_list_of_videos(m3u8_playlists, subject_folder, tmp_directory)
+        downloader.download_list_of_videos(m3u8_playlists, subject_folder)
 
     driver.close()

@@ -63,11 +63,6 @@ if __name__ == '__main__':
     if username and not password:
         password = input("Please enter your TUM-Password (must fit to the TUM-Username):\n")
 
-    TMP_DIRECTORY = Path(destination_folder_path)
-
-    if not os.path.isdir(TMP_DIRECTORY):  # create temporary work-directory if it does not exist
-        os.mkdir(TMP_DIRECTORY)
-
     if (tum_live2_subjects or panopto_folders) and not (username and password):
         raise argparse.ArgumentTypeError("Panopto and the new TUM-Live requires a TUM username and password")
 
@@ -78,4 +73,4 @@ if __name__ == '__main__':
         tum_live2.get_subjects(tum_live2_subjects, destination_folder_path, TMP_DIRECTORY, username, password)
 
     if panopto_folders:
-        panopto.get_folders(panopto_folders, destination_folder_path, TMP_DIRECTORY, username, password)
+        panopto.get_folders(panopto_folders, destination_folder_path, username, password)
