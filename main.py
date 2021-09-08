@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 
 import panopto
-import tum_live
+# import tum_live
 import tum_live2
 
 
@@ -29,7 +29,7 @@ def parse_tum_panopto_folder(s: str) -> (str, str):
 if __name__ == '__main__':
     os.nice(15)  # set our nice value, so we can work in the background
 
-    TMP_DIRECTORY = Path(tempfile.gettempdir(), "tum_video_scraper")  # default: (/tmp/tum_video_scraper/)
+    # TMP_DIRECTORY = Path(tempfile.gettempdir(), "tum_video_scraper")  # default: (/tmp/tum_video_scraper/)
 
     parser = argparse.ArgumentParser(description="Download and jump-cut TUM-Lecture-Videos")
     parser.add_argument("output_folder", help="output folder path", type=Path)
@@ -62,6 +62,8 @@ if __name__ == '__main__':
     password = args.password
     if username and not password:
         password = input("Please enter your TUM-Password (must fit to the TUM-Username):\n")
+
+    TMP_DIRECTORY = Path(destination_folder_path)
 
     if not os.path.isdir(TMP_DIRECTORY):  # create temporary work-directory if it does not exist
         os.mkdir(TMP_DIRECTORY)

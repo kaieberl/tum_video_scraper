@@ -32,6 +32,7 @@ def get_video_links_in_folder(driver: webdriver, folder_id: str) -> [(str, str)]
 
 def get_m3u8_playlist(driver: webdriver, video_id: str) -> (str, str):
     video_url = "https://tum.cloud.panopto.eu/Panopto/Pages/Embed.aspx?id=" + video_id
+    sleep(1)    # else server blocks crawler
     driver.get(video_url)
 
     prefix = "\"VideoUrl\":\""
@@ -49,7 +50,7 @@ def get_m3u8_playlist(driver: webdriver, video_id: str) -> (str, str):
 def get_folders(panopto_folders: [(str, str)], destination_folder_path: Path, tmp_directory: Path,
                 tum_username: str, tum_password: str):
     driver_options = webdriver.FirefoxOptions()
-    driver_options.add_argument("--headless")
+    # driver_options.add_argument("--headless")
     driver = webdriver.Firefox(options=driver_options)
     driver.get("https://www.moodle.tum.de/login/index.php")
     driver.find_element_by_link_text("TUM LOGIN").click()
@@ -62,7 +63,7 @@ def get_folders(panopto_folders: [(str, str)], destination_folder_path: Path, tm
         raise argparse.ArgumentTypeError("Username or password incorrect")
 
     driver.get("https://tum.cloud.panopto.eu/")
-    driver.find_element_by_link_text("Sign in").click()
+    driver.find_element_by_id("PageContentPlaceholder_loginControl_externalLoginButton").click()
     sleep(1)
 
     for subject_name, folder_id in panopto_folders:

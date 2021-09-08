@@ -18,18 +18,19 @@ def download_list_of_videos(videos: (str, str), output_folder_path: Path, tmp_di
 
 
 def download_and_cut_video(filename: str, playlist_url: str, output_file_path: Path, tmp_directory: Path):
-    temporary_path = Path(tmp_directory, filename + ".original")
+    # temporary_path = Path(tmp_directory, filename + ".original")
+    temporary_path = Path(output_file_path, filename)
     download_command = "ffmpeg -y -hide_banner -hwaccel auto " + \
                        f"-i \"{playlist_url}\" -c copy -f mp4 \"{temporary_path}\" > /dev/null"
     print("Starting download of " + filename)
     download_start_time = time.time()
     os.system(download_command)
     print(f"Download of {filename} completed after {str(time.time() - download_start_time)}s")
-    cut_command = f"auto-editor \"{temporary_path}\" --silent_speed 8 " \
-                  f"--video_codec libx264 --constant_rate_factor 30 --no_open -o \"{output_file_path}\" > /dev/null"
-    conversion_start_time = time.time()
-    os.system(cut_command)
-    print(f"Conversion of {filename} completed after {str(time.time() - conversion_start_time)}s")
+    # cut_command = f"auto-editor \"{temporary_path}\" --silent_speed 8 " \
+    #               f"--video_codec libx264 --constant_rate_factor 30 --no_open -o \"{output_file_path}\" > /dev/null"
+    # conversion_start_time = time.time()
+    # os.system(cut_command)
+    # print(f"Conversion of {filename} completed after {str(time.time() - conversion_start_time)}s")
     temporary_path.unlink()
     Path(output_file_path.as_posix() + ".lock").unlink()  # remove lock
     print(f"Done with {filename} after {str(time.time() - download_start_time)}s")
