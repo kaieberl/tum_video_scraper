@@ -17,16 +17,22 @@ def get_video_links_in_folder(driver: webdriver, folder_id: str) -> [(str, str)]
     if "Failed to load folder" in driver.title:
         print("Folder-ID incorrect: " + folder_id)
         raise Exception
+
     links_on_page = driver.find_elements_by_xpath(".//a")
-    video_urls: set[str] = set()
+    video_urls: [str] = []
     for link in links_on_page:
         link_url = link.get_attribute("href")
         if link_url and "https://tum.cloud.panopto.eu/Panopto/Pages/Viewer.aspx" in link_url:
-            video_urls.add(link_url)
-    video_playlists: set[(str, str)] = set()
+            video_urls.append(link_url)
+
+    video_playlists: [(str, str)] = []
     for video_url in video_urls:
         video_id = video_url[-36:]
-        video_playlists.add(get_m3u8_playlist(driver, video_id))
+        video_playlists.append(get_m3u8_playlist(driver, video_id))
+
+    video_playlists = util.dedup(video_playlists)
+    video_playlists.reverse()
+
     return video_playlists
 
 
@@ -43,32 +49,15 @@ def get_m3u8_playlist(driver: webdriver, video_id: str) -> (str, str):
         return
     playlist_extracted_url = matches.group(1)
     playlist_url = playlist_extracted_url.replace('\\', '') + postfix
-    filename = driver.title.replace(' ', '_') + ".mp4"
+    filename = driver.title.strip()
     return filename, playlist_url
 
 
-def get_folders(panopto_folders: [(str, str)], destination_folder_path: Path, tum_username: str, tum_password: str):
-    driver_options = webdriver.FirefoxOptions()
-    driver_options.add_argument("--headless")
-    driver = webdriver.Firefox(options=driver_options)
-    driver.get("https://www.moodle.tum.de/login/index.php")
-    driver.find_element_by_link_text("TUM LOGIN").click()
-    driver.find_element_by_id("username").send_keys(tum_username)
-    driver.find_element_by_id("password").send_keys(tum_password)
-    driver.find_element_by_id("btnLogin").click()
-    sleep(3)
-    if "Username or password was incorrect" in driver.page_source:
-        driver.close()
-        raise argparse.ArgumentTypeError("Username or password incorrect")
-
-    driver.get("https://tum.cloud.panopto.eu/")
-    driver.find_element_by_id("PageContentPlaceholder_loginControl_externalLoginButton").click()
-    sleep(1)
-
-    for subject_name, folder_id in panopto_folders:
+def get_folders(panopto_folders: dict[str, str], tum_username: str, tum_password: str, queue: [str, (str, str)]):
+    driver = login(tum_username, tum_password)
+    for subject_name, folder_id in panopto_folders.items():
         m3u8_playlists = get_video_links_in_folder(driver, folder_id)
-        subject_folder = Path(destination_folder_path, subject_name)
-        subject_folder.mkdir(exist_ok=True)
-        downloader.download_list_of_videos(m3u8_playlists, subject_folder)
-
+        m3u8_playlists = util.rename_duplicates(m3u8_playlists)
+        print(f'Found {len(m3u8_playlists)} videos for "{subject_name}"')
+        queue.append((subject_name, m3u8_playlists))
     driver.close()
