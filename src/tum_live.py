@@ -5,6 +5,7 @@ from time import sleep
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from typing import Dict, Tuple
 
 import util
 
@@ -61,7 +62,7 @@ def get_playlist_url(source: str) -> str:
     return playlist_url
 
 
-def get_subjects(subjects: dict[str, (str, str)], tum_username: str, tum_password: str, queue: [str, (str, str)]):
+def get_subjects(subjects: Dict[str, Tuple[str, str]], tum_username: str, tum_password: str, queue: [str, Tuple[str, str]]):
     driver = login(tum_username, tum_password)
     for subject_name, (subjects_identifier, camera_type) in subjects.items():
         m3u8_playlists = get_video_links_of_subject(driver, subjects_identifier, camera_type)

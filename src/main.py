@@ -1,7 +1,6 @@
 import argparse
 import os
 import tempfile
-from multiprocessing import Semaphore
 from pathlib import Path
 
 import yaml
@@ -139,7 +138,6 @@ if __name__ == '__main__':
         maximum_parallel_downloads = cfg['Maximum-Parallel-Downloads']
     if args.maximum_parallel_downloads:
         maximum_parallel_downloads = args.maximum_parallel_downloads
-    semaphore = Semaphore(maximum_parallel_downloads)  # Keeps us from using massive amounts of RAM
 
     print("Starting new run!")
     videos_for_subject: [str, (str, str)] = []
@@ -160,4 +158,4 @@ if __name__ == '__main__':
     for subject, playlists in videos_for_subject:
         subject_folder = Path(destination_folder_path, subject)
         subject_folder.mkdir(exist_ok=True)
-        downloader.download_list_of_videos(playlists, subject_folder, tmp_directory, semaphore)
+        downloader.download_list_of_videos(playlists, subject_folder, tmp_directory)
