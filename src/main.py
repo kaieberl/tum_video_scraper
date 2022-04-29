@@ -7,6 +7,7 @@ import yaml
 
 import downloader
 import panopto
+import moodle
 import tum_live
 
 
@@ -39,6 +40,14 @@ def parse_tum_panopto_folder(s: str) -> (str, str):
         raise argparse.ArgumentTypeError("Panopto folders must be in the form: subject_name:panopto_folder_id")
 
 
+def parse_tum_moodle_folder(s: str) -> (str, str):
+    try:
+        a, b = s.split(':')
+        return a, b
+    except ValueError:
+        raise argparse.ArgumentTypeError("Moodle folders must be in the form: subject_name:moodle_folder_id")
+
+
 if __name__ == '__main__':
     os.nice(15)  # set our nice value, so we can work in the background
 
@@ -50,6 +59,9 @@ if __name__ == '__main__':
     parser.add_argument("--panopto",
                         help="List of TUM-Panopto folders in the form: subject_name:panopto_folder_id",
                         type=parse_tum_panopto_folder, nargs='+')
+    parser.add_argument("--moodle",
+                        help="List of TUM-Moodle folders in the form: subject_name:moodle_folder_id",
+                        type=parse_tum_moodle_folder, nargs='+')
 
     parser.add_argument("-u", "--username", help="TUM-Username (go42tum)", type=str)
     parser.add_argument("-p", "--password", help="TUM-Password (must fit to the TUM-Username)", type=str)
@@ -112,6 +124,13 @@ if __name__ == '__main__':
     if args.panopto:
         panopto_folders.update({a: b for a, b in args.panopto})
 
+    # Parse moodle folders
+    moodle_folders = {}
+    if cfg and 'Moodle' in cfg:
+        moodle_folders.update(cfg['Moodle'])
+    if args.moodle:
+        moodle_folders.update({a: b for a, b in args.moodle})
+
     # Parse username
     username = None
     if cfg and 'Username' in cfg:
@@ -151,6 +170,11 @@ if __name__ == '__main__':
     print("\nScanning Panopto:")
     if panopto_folders:
         panopto.get_folders(panopto_folders, username, password, videos_for_subject)
+
+    # Scrape Panopto videos on Moodle
+    print("\nScanning Moodle:")
+    if moodle_folders:
+        moodle.get_folders(moodle_folders, username, password, videos_for_subject)
 
     # Download videos
     print("\n--------------------\n")

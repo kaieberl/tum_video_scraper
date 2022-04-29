@@ -11,8 +11,9 @@ from typing import Dict, Tuple
 import downloader
 import util
 
+SMOKE_TEST = False
 
-def login(tum_username: str, tum_password: str) -> webdriver:
+def moodle_login(tum_username: str, tum_password: str) -> webdriver:
     driver_options = webdriver.ChromeOptions()
     # driver_options.add_argument("--headless")
     if os.getenv('NO-SANDBOX') == '1':
@@ -30,28 +31,41 @@ def login(tum_username: str, tum_password: str) -> webdriver:
         driver.close()
         raise argparse.ArgumentTypeError("Username or password incorrect")
 
-    driver.get("https://tum.cloud.panopto.eu/")
-    driver.find_element(By.LINK_TEXT, "Anmelden").click()
-    sleep(1)
     return driver
 
 
+def panopto_login(driver: webdriver) -> webdriver:
+    driver.get("https://tum.cloud.panopto.eu/")
+    driver.find_element(By.LINK_TEXT, "Anmelden").click()
+
+
 def get_video_links_in_folder(driver: webdriver, folder_id: str) -> [(str, str)]:
-    folder_link = f"https://tum.cloud.panopto.eu/Panopto/Pages/Sessions/List.aspx#folderID=%22" \
-                  f"{folder_id}" \
-                  f"%22&maxResults=250"
+    folder_link = f"https://www.moodle.tum.de/course/view.php?id={folder_id}"
     driver.get(folder_link)
-    sleep(3)
+    sleep(1)
     if "Failed to load folder" in driver.title:
         print("Folder-ID incorrect: " + folder_id)
         raise Exception
 
     links_on_page = driver.find_elements_by_xpath(".//a")
+    moodle_urls: [str] = []
     video_urls: [str] = []
     for link in links_on_page:
         link_url = link.get_attribute("href")
-        if link_url and "https://tum.cloud.panopto.eu/Panopto/Pages/Viewer.aspx" in link_url:
-            video_urls.append(link_url)
+        if link_url and "Video" in link.accessible_name:
+            moodle_urls.append(link_url)
+            if SMOKE_TEST:
+                break
+
+    for link_url in moodle_urls:
+        driver.get(link_url)
+        links_on_page = driver.find_elements_by_xpath(".//a")
+        for link in links_on_page:
+            link_url = link.get_attribute("href")
+            if link_url and "https://tum.cloud.panopto.eu/Panopto/Pages/Viewer.aspx" in link.accessible_name:
+                video_urls.append(link_url)
+
+    panopto_login(driver)
 
     video_playlists: [(str, str)] = []
     for video_url in video_urls:
@@ -85,7 +99,7 @@ def get_m3u8_playlist(driver: webdriver, video_id: str) -> (str, str):
 
 
 def get_folders(panopto_folders: Dict[str, str], tum_username: str, tum_password: str, queue: [str, Tuple[str, str]]):
-    driver = login(tum_username, tum_password)
+    driver = moodle_login(tum_username, tum_password)
     for subject_name, folder_id in panopto_folders.items():
         m3u8_playlists = get_video_links_in_folder(driver, folder_id)
         m3u8_playlists = util.rename_duplicates(m3u8_playlists)
