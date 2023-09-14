@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import re
 from pathlib import Path
@@ -8,7 +9,6 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from typing import Dict, Tuple
 
-import downloader
 import util
 
 
@@ -46,12 +46,19 @@ def get_video_links_in_folder(driver: webdriver, folder_id: str) -> [(str, str)]
         print("Folder-ID incorrect: " + folder_id)
         raise Exception
 
-    links_on_page = driver.find_elements_by_xpath(".//a")
+    links_on_page = driver.find_elements("xpath", ".//a")
     video_urls: [str] = []
+    playlist_ids: [str] = []
     for link in links_on_page:
         link_url = link.get_attribute("href")
-        if link_url and "https://tum.cloud.panopto.eu/Panopto/Pages/Viewer.aspx" in link_url:
+        if link_url and "https://tum.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id" in link_url:
             video_urls.append(link_url)
+        elif link_url and "https://tum.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?pid" in link_url:
+            playlist_id = link_url[-36:]
+            playlist_ids.append(playlist_id)
+
+    for playlist_id in playlist_ids:
+        video_urls.extend(get_video_links_in_playlist(driver, playlist_id))
 
     video_playlists: [(str, str)] = []
     for video_url in video_urls:
@@ -63,6 +70,23 @@ def get_video_links_in_folder(driver: webdriver, folder_id: str) -> [(str, str)]
 
     return video_playlists
 
+
+def get_video_links_in_playlist(driver: webdriver, playlist_id: str) -> [str]:
+    playlist_link = f"https://tum.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?pid=" \
+                    f"{playlist_id}"
+    driver.get(playlist_link)
+    sleep(3)
+    if "Failed to load playlist" in driver.title:
+        print("Playlist-ID incorrect: " + playlist_id)
+        raise Exception
+
+    links_on_page = driver.find_elements("xpath", ".//tr")
+    video_ids: [str] = []
+    for link in links_on_page:
+        video_id = link.get_attribute("data-id")
+        video_ids.append("https://tum.cloud.panopto.eu/Panopto/Pages/Viewer.aspx?id=" + video_id)
+
+    return video_ids
 
 def get_m3u8_playlist(driver: webdriver, video_id: str) -> (str, str):
     video_url = "https://tum.cloud.panopto.eu/Panopto/Pages/Embed.aspx?id=" + video_id
@@ -81,6 +105,7 @@ def get_m3u8_playlist(driver: webdriver, video_id: str) -> (str, str):
         print("Error on URL " + video_url + " - " + driver.title)
         return
     filename = driver.title.strip()
+    logging.info(f'Found video "{filename}" at {playlist_url}')
     return filename, playlist_url
 
 

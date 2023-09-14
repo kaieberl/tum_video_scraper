@@ -25,24 +25,28 @@ def download_and_cut_video(filename: str, playlist_url: str, output_file_path: P
     download_start_time = time.time()  # Track download time
 
     print(f"Download of {filename} started")
-    ffmpeg = subprocess.run([
-        'ffmpeg',
-        '-y',  # Overwrite output file if it already exists
-        '-hwaccel', 'auto',  # Hardware acceleration
-        '-i', playlist_url,  # Input file
-        '-c', 'copy',  # Codec name
-        '-f', 'mp4',  # Force mp4 as output file format
-        temporary_path  # Output file
-    ], capture_output=True)
+    if playlist_url.endswith(".mp4"):
+        # use curl instead of ffmpeg to resume in case http stream is closed
+        proc = subprocess.run(["curl", "-o", temporary_path, "--retry", "100", "-C", "-", playlist_url], capture_output=True)
+    else:
+        ffmpeg = subprocess.run([
+            'ffmpeg',
+            '-y',  # Overwrite output file if it already exists
+            '-hwaccel', 'auto',  # Hardware acceleration
+            '-i', playlist_url,  # Input file
+            '-c', 'copy',  # Codec name
+            '-f', 'mp4',  # Force mp4 as output file format
+            temporary_path  # Output file
+        ], capture_output=True)
 
-    if ffmpeg.returncode != 0:  # Print debug output in case of error
-        print(f'Error during download of "{filename}" with ffmpeg:', file=sys.stderr)
-        print(f'Playlist file: {playlist_url}', file=sys.stderr)
-        print(f'Designated download location: {temporary_path}', file=sys.stderr)
-        print(f'Designated output location: {output_file_path}', file=sys.stderr)
-        print(f'Output of ffmpeg to stdout:\n' + ffmpeg.stdout.decode('utf-8'), file=sys.stderr)
-        print(f'Output of ffmpeg to stderr:\n' + ffmpeg.stderr.decode('utf-8'), file=sys.stderr)
-        return
+        if ffmpeg.returncode != 0:  # Print debug output in case of error
+            print(f'Error during download of "{filename}" with ffmpeg:', file=sys.stderr)
+            print(f'Playlist file: {playlist_url}', file=sys.stderr)
+            print(f'Designated download location: {temporary_path}', file=sys.stderr)
+            print(f'Designated output location: {output_file_path}', file=sys.stderr)
+            print(f'Output of ffmpeg to stdout:\n' + ffmpeg.stdout.decode('utf-8'), file=sys.stderr)
+            print(f'Output of ffmpeg to stderr:\n' + ffmpeg.stderr.decode('utf-8'), file=sys.stderr)
+            return
 
     print(f"Download of {filename} completed after {(time.time() - download_start_time):.0f}s")
     # conversion_start_time = time.time()  # Track auto-editor time

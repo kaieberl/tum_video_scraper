@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import re
 from pathlib import Path
@@ -47,7 +48,7 @@ def get_video_links_in_folder(driver: webdriver, folder_id: str) -> [(str, str)]
         print("Folder-ID incorrect: " + folder_id)
         raise Exception
 
-    links_on_page = driver.find_elements_by_xpath(".//a")
+    links_on_page = driver.find_elements(By.XPATH, ".//a")
     moodle_urls: [str] = []
     video_urls: [str] = []
     for link in links_on_page:
@@ -59,7 +60,7 @@ def get_video_links_in_folder(driver: webdriver, folder_id: str) -> [(str, str)]
 
     for link_url in moodle_urls:
         driver.get(link_url)
-        links_on_page = driver.find_elements_by_xpath(".//a")
+        links_on_page = driver.find_elements(By.XPATH, ".//a")
         for link in links_on_page:
             link_url = link.get_attribute("href")
             if link_url and "https://tum.cloud.panopto.eu/Panopto/Pages/Viewer.aspx" in link.accessible_name:
@@ -95,6 +96,7 @@ def get_m3u8_playlist(driver: webdriver, video_id: str) -> (str, str):
         print("Error on URL " + video_url + " - " + driver.title)
         return
     filename = driver.title.strip()
+    logging.info(f'Found video "{filename}" at {playlist_url}')
     return filename, playlist_url
 
 

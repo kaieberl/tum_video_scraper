@@ -1,4 +1,5 @@
 import argparse
+import logging
 import os
 import tempfile
 from pathlib import Path
@@ -10,6 +11,7 @@ import panopto
 import moodle
 import tum_live
 
+logging.basicConfig(level=logging.INFO)
 
 def parse_tum_live_subject(s: str) -> (str, str, str):
     try:
